@@ -13,6 +13,22 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# ✅ Load school info from local JSON file
+try:
+    with open("school_info.json", "r", encoding="utf-8") as f:
+        school_data = json.load(f)
+except Exception as e:
+    print("❌ Error loading school_info.json:", e)
+    school_data = []
+
+# ✅ Create a structured knowledge base prompt
+knowledge_base = "\n".join(
+    [f"Q: {item['question']}\nA: {item['answer']}" for item in school_data]
+)
+
+
+
+
 
 # 🔐 Get API Key from Render environment variable
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
@@ -30,16 +46,21 @@ async def ask_question(request: Request):
 
         payload = {
             "model": GROQ_MODEL,
-            "messages": [
-                {
-                    "role": "system",
-                    "content": "You are a helpful school assistant. Answer questions related to admissions, timings, holidays, facilities, events, fees, etc."
-                },
-                {
-                    "role": "user",
-                    "content": question
-                }
-            ]
+           "messages" = [
+            {
+                "role": "system",
+                "content": (
+                    "You are Skoolie 🤖, a helpful and friendly school assistant chatbot. "
+                    "Only answer questions using the school information provided below. "
+                    "If you don't know the answer, politely say: 'Sorry, I can only answer school-related queries.'\n\n"
+                    f"{knowledge_base}"
+                )
+            },
+            {
+                "role": "user",
+                "content": question
+            }
+        ]
         }
 
         response = requests.post(
